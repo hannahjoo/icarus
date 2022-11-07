@@ -7,6 +7,7 @@ const int xpin = A3;                  // x-axis of the accelerometer
 const int ypin = A2;                  // y-axis
 const int zpin = A1;                  // z-axis (only on 3-axis models)
 int pin = 7;
+int scale = 3;
 unsigned long duration;
 
 void setup() {
@@ -18,26 +19,42 @@ void setup() {
   digitalWrite(powerpin, HIGH);
 }
 
-void loop() {
-  double x = analogRead(xpin);
+float mapf(float x, float in_min, float in_max, float out_min, float out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
+void loop() {
   duration = pulseIn(pin, HIGH);
-  Serial.print("PWM: ");
-  Serial.print(duration);
-  Serial.print("\t");
-  // print the sensor values:
-  Serial.print("X: ");
-  Serial.print(analogRead(xpin));
-  // print a tab between values:
-  Serial.print("\t");
-  Serial.print("Y: ");
-  Serial.print(analogRead(ypin));
-  // print a tab between values:
-  Serial.print("\t");
-  Serial.print("Z: ");  //600 - 404
-  Serial.print(analogRead(zpin));
+
+  int rawx = analogRead(xpin);
+  int rawy = analogRead(ypin);
+  int rawz = analogRead(zpin);
+
+  float scaledx, scaledy, scaledz;
+  scaledx = mapf(rawx, 0, 1023, -scale, scale);
+  scaledy = mapf(rawy, 0, 1023, -scale, scale);
+  scaledz = mapf(rawz, 0, 1023, -scale, scale);
+
+  int xtilt, ytilt, ztilt;
+  xtilt = 180 * atan(rawx / sqrt(rawy*rawy + rawz*rawz));
+  ytilt = 180 * atan(rawy / sqrt(rawx*rawx + rawz*rawz));
+  ztilt = 180 * atan(sqrt(rawx*rawx + rawy*rawy)/rawz);
+  
+  Serial.print("PWM: "); Serial.print(duration); Serial.print("\t");
+  Serial.print("Raw x: "); Serial.print(rawx); Serial.print("\t");
+  Serial.print("Raw y: "); Serial.print(rawy); Serial.print("\t");
+  Serial.print("Raw z: "); Serial.print(rawz); Serial.println();
+
+  Serial.print("Scaled x: "); Serial.print(scaledx); Serial.print(" g"); Serial.print("\t");
+  Serial.print("Scaled y: "); Serial.print(scaledy); Serial.print(" g"); Serial.print("\t");
+  Serial.print("Scaled z: "); Serial.print(scaledz); Serial.print(" g"); Serial.println();
+
+  Serial.print("X tilt: "); Serial.print(xtilt); Serial.print("\t");
+  Serial.print("Y tilt: "); Serial.print(ytilt); Serial.print("\t");
+  Serial.print("Z tilt: "); Serial.print(ztilt); Serial.println();
   Serial.println();
-  // delay before next reading:
+
   delay(100);
 }
 
